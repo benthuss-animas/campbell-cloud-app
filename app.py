@@ -141,7 +141,7 @@ with st.sidebar:
 st.title("Silverton Mountain Weather Station")
 
 # Auto-refresh option
-auto_refresh = st.checkbox("⚡ Auto-refresh every 5 minutes", value=False)
+auto_refresh = st.checkbox("⚡ Auto-refresh every 5 minutes", value=False, disabled=True)
 
 if auto_refresh:
     st.empty()
