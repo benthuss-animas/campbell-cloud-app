@@ -63,7 +63,7 @@ def get_datastreams(token):
     
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    fetch_time = datetime.now().strftime('%I:%M:%S %p')
+    fetch_time = datetime.now(ZoneInfo("America/Denver")).strftime('%I:%M:%S %p')
     return {"data": response.json(), "fetched_at": fetch_time}
 
 @st.cache_data(ttl=300)  # Cache for 5 minutes
