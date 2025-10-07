@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 from datetime import datetime
 import hashlib
+from zoneinfo import ZoneInfo
 
 # Configuration - Use st.secrets for Streamlit Cloud deployment
 try:
@@ -169,12 +170,13 @@ with st.spinner("Fetching data from Campbell Cloud..."):
         fetch_time = datastreams_response["fetched_at"]
         
         # Show cache status
-        current_time = datetime.now()
+        current_time = datetime.now(ZoneInfo("America/Denver"))
         try:
             fetch_dt = datetime.strptime(fetch_time, '%I:%M:%S %p').replace(
                 year=current_time.year, 
                 month=current_time.month, 
-                day=current_time.day
+                day=current_time.day,
+                tzinfo=ZoneInfo("America/Denver")
             )
             age_seconds = (current_time - fetch_dt).total_seconds()
             if age_seconds < 10:
@@ -227,7 +229,7 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                 if latest and latest.get("data"):
                     current_measurements[field_name] = {
                         "value": latest["data"][0]["value"],
-                        "timestamp": datetime.fromtimestamp(latest["data"][0]["ts"] / 1000)
+                        "timestamp": datetime.fromtimestamp(latest["data"][0]["ts"] / 1000, tz=ZoneInfo("America/Denver"))
                     }
                     
                     # Store gust datastream ID for 24-hour peak
@@ -247,7 +249,7 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                     max_point = max(gust_points, key=lambda x: x["value"])
                     peak_gust = {
                         "value": max_point["value"],
-                        "timestamp": datetime.fromtimestamp(max_point["ts"] / 1000)
+                        "timestamp": datetime.fromtimestamp(max_point["ts"] / 1000, tz=ZoneInfo("America/Denver"))
                     }
         
         # CSS for card styling with CSS Grid (always 2 columns)
@@ -444,7 +446,7 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                                 margin=dict(t=20, b=80, l=20, r=20)
                             )
                             
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
                             
                             # Helper function to convert degrees to cardinal direction
                             def degrees_to_cardinal(degrees):
@@ -456,8 +458,8 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                             # Calculate time range
                             timestamps = [point["ts"] for point in speed_points if point["ts"] in dir_lookup]
                             if timestamps:
-                                start_dt = datetime.fromtimestamp(min(timestamps) / 1000)
-                                end_dt = datetime.fromtimestamp(max(timestamps) / 1000)
+                                start_dt = datetime.fromtimestamp(min(timestamps) / 1000, tz=ZoneInfo("America/Denver"))
+                                end_dt = datetime.fromtimestamp(max(timestamps) / 1000, tz=ZoneInfo("America/Denver"))
                                 time_range = f"{start_dt.strftime('%m/%d %I:%M%p')} - {end_dt.strftime('%m/%d %I:%M%p')}"
                             else:
                                 time_range = "N/A"
@@ -543,13 +545,13 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                             st.error("No data points found in response.")
                         else:
                             # Create lists for plotting
-                            speed_times = [datetime.fromtimestamp(p['ts']/1000) for p in speed_points]
+                            speed_times = [datetime.fromtimestamp(p['ts']/1000, tz=ZoneInfo("America/Denver")) for p in speed_points]
                             speed_values = [p['value'] for p in speed_points]
                             
-                            gust_times = [datetime.fromtimestamp(p['ts']/1000) for p in gust_points]
+                            gust_times = [datetime.fromtimestamp(p['ts']/1000, tz=ZoneInfo("America/Denver")) for p in gust_points]
                             gust_values = [p['value'] for p in gust_points]
                             
-                            dir_times = [datetime.fromtimestamp(p['ts']/1000) for p in dir_points]
+                            dir_times = [datetime.fromtimestamp(p['ts']/1000, tz=ZoneInfo("America/Denver")) for p in dir_points]
                             dir_values = [p['value'] for p in dir_points]
                             
                             # Create the figure
@@ -693,10 +695,10 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                         
                         if temp_points and humidity_points:
                             # Create lists
-                            temp_times = [datetime.fromtimestamp(p['ts']/1000) for p in temp_points]
+                            temp_times = [datetime.fromtimestamp(p['ts']/1000, tz=ZoneInfo("America/Denver")) for p in temp_points]
                             temp_values = [p['value'] for p in temp_points]
                             
-                            humidity_times = [datetime.fromtimestamp(p['ts']/1000) for p in humidity_points]
+                            humidity_times = [datetime.fromtimestamp(p['ts']/1000, tz=ZoneInfo("America/Denver")) for p in humidity_points]
                             humidity_values = [p['value'] for p in humidity_points]
                             
                             # Create figure with secondary y-axis
@@ -778,10 +780,10 @@ with st.spinner("Fetching data from Campbell Cloud..."):
             for item in tables["Twelve_Hours"]:
                 if item["field"] == "BattV_Min":
                     battery_voltage = item["latest"]["value"]
-                    battery_timestamp = datetime.fromtimestamp(item["latest"]["ts"] / 1000)
+                    battery_timestamp = datetime.fromtimestamp(item["latest"]["ts"] / 1000, tz=ZoneInfo("America/Denver"))
                 elif item["field"] == "PTemp_C_Max":
                     panel_temp = item["latest"]["value"]
-                    temp_timestamp = datetime.fromtimestamp(item["latest"]["ts"] / 1000)
+                    temp_timestamp = datetime.fromtimestamp(item["latest"]["ts"] / 1000, tz=ZoneInfo("America/Denver"))
             
             col1, col2 = st.columns(2)
             
@@ -843,7 +845,7 @@ with st.spinner("Fetching data from Campbell Cloud..."):
             # Add timestamp footer
             if battery_timestamp or temp_timestamp:
                 latest_timestamp = battery_timestamp or temp_timestamp
-                current_time = datetime.now()
+                current_time = datetime.now(ZoneInfo("America/Denver"))
                 age_hours = (current_time - latest_timestamp).total_seconds() / 3600
                 
                 if age_hours < 1:
