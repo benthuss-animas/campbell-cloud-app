@@ -12,10 +12,10 @@ try:
     ORGANIZATION_ID = st.secrets["CAMPBELL_ORGANIZATION_ID"]
     APP_PASSWORD = st.secrets["APP_PASSWORD"]
 except KeyError as e:
-    st.error(f"⚠️ Missing required secret: {e}. Please configure secrets in Streamlit Cloud.")
+    st.error(f"Missing required secret: {e}. Please configure secrets in Streamlit Cloud.")
     st.stop()
 except FileNotFoundError:
-    st.error("⚠️ No secrets file found. Please configure secrets in Streamlit Cloud or add .streamlit/secrets.toml locally.")
+    st.error("No secrets file found. Please configure secrets in Streamlit Cloud or add .streamlit/secrets.toml locally.")
     st.stop()
 
 def check_password():
@@ -27,7 +27,7 @@ def check_password():
         st.session_state.authenticated = stored_hash == current_hash
     
     if not st.session_state.authenticated:
-        st.title("🔐 Authentication Required")
+        st.title("Authentication Required")
         password_input = st.text_input("Enter password:", type="password", key="password_input")
         
         if st.button("Login"):
@@ -141,7 +141,7 @@ with st.sidebar:
 st.title("Silverton Mountain Weather Station")
 
 # Auto-refresh option
-auto_refresh = st.checkbox("⚡ Auto-refresh every 5 minutes", value=False, disabled=True)
+auto_refresh = st.checkbox("Auto-refresh every 5 minutes", value=False, disabled=True)
 
 if auto_refresh:
     st.empty()
@@ -578,20 +578,21 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                                 hovertemplate='%{y:.1f} mph<extra></extra>'
                             ))
                             
-                            # Add direction arrows (sampled)
+                            # Add direction arrows
+                            dir_lookup_for_arrows = {dir_times[i]: dir_values[i] for i in range(len(dir_times))}
+                            
                             arrow_interval = max(1, len(speed_points) // 30)  # ~30 arrows
                             for i in range(0, len(speed_points), arrow_interval):
-                                if i < len(dir_points):
-                                    direction = dir_values[i]
-                                    speed_val = speed_values[i]
-                                    time_val = speed_times[i]
+                                time_val = speed_times[i]
+                                speed_val = speed_values[i]
+                                
+                                # Find matching direction by timestamp
+                                if time_val in dir_lookup_for_arrows:
+                                    direction = dir_lookup_for_arrows[time_val]
                                     
-                                    # Wind direction is where wind is COMING FROM (meteorological convention)
                                     # 0° = North, 90° = East, 180° = South, 270° = West
-                                    # Arrow points FROM origin direction (tail) TO data point (head)
-                                    # For vertical chart: North (0°) = tail above, South (180°) = tail below
                                     
-                                    arrow_length = 3.0  # mph units
+                                    arrow_length = 3.0  
                                     # cos(0°)=1 (north, tail above), cos(180°)=-1 (south, tail below)
                                     dy = arrow_length * np.cos(np.radians(direction))
                                     
