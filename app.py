@@ -578,47 +578,69 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                                 hovertemplate='%{y:.1f} mph<extra></extra>'
                             ))
                             
-                            # Add direction arrows
+                            # Add wind direction arrows in a straight line at top of chart
                             dir_lookup_for_arrows = {dir_times[i]: dir_values[i] for i in range(len(dir_times))}
+                            max_speed = max(speed_values + gust_values)
                             
-                            arrow_interval = max(1, len(speed_points) // 30)  # ~30 arrows
+                            debug_data = []
+                            arrow_interval = max(1, len(speed_points) // 30)
                             for i in range(0, len(speed_points), arrow_interval):
                                 time_val = speed_times[i]
-                                speed_val = speed_values[i]
                                 
-                                # Find matching direction by timestamp
                                 if time_val in dir_lookup_for_arrows:
                                     direction = dir_lookup_for_arrows[time_val]
                                     
-                                    # 0° = North, 90° = East, 180° = South, 270° = West
+                                    # Meteorological direction = where wind comes FROM
+                                    # Arrow points where wind is GOING (add 180°)
+                                    arrow_angle = (direction + 180) % 360
                                     
-                                    arrow_length = 3.0  
-                                    # cos(0°)=1 (north, tail above), cos(180°)=-1 (south, tail below)
-                                    dy = arrow_length * np.cos(np.radians(direction))
+                                    # Plotly annotation arrows: ax,ay point from HEAD to TAIL
+                                    # For arrow pointing towards arrow_angle, tail is opposite direction
+                                    # Meteorological: 0°=N, 90°=E, 180°=S, 270°=W (clockwise from North)
+                                    arrow_length = 25
+                                    
+                                    # Convert meteorological to radians, adjust for tail position
+                                    angle_rad = np.radians(arrow_angle)
+                                    dx = -arrow_length * np.sin(angle_rad)  # Tail offset in x
+                                    dy = arrow_length * np.cos(angle_rad)   # Tail offset in y (screen coords)
+                                    
+                                    debug_data.append({
+                                        'time': time_val.strftime('%I:%M%p'),
+                                        'from_dir': direction,
+                                        'to_dir': arrow_angle,
+                                        'dx': dx,
+                                        'dy': dy
+                                    })
                                     
                                     fig.add_annotation(
                                         x=time_val,
-                                        y=speed_val,  # Arrow head at data point
-                                        ax=time_val,
-                                        ay=speed_val + dy,  # Arrow tail offset by direction
+                                        y=max_speed * 1.05,
+                                        ax=dx,
+                                        ay=dy,
                                         xref='x',
                                         yref='y',
-                                        axref='x',
-                                        ayref='y',
+                                        axref='pixel',
+                                        ayref='pixel',
                                         showarrow=True,
                                         arrowhead=2,
-                                        arrowsize=1.5,
-                                        arrowwidth=1.5,
+                                        arrowsize=1,
+                                        arrowwidth=2,
                                         arrowcolor='#00CED1',
                                         standoff=0
                                     )
+                            
+                            # Debug info display
+                            # with st.expander("🔍 Debug: Wind Arrow Calculations"):
+                            #     st.write(f"Showing all {len(debug_data)} arrows:")
+                            #     for d in debug_data:
+                            #         st.text(f"{d['time']}: Wind FROM {d['from_dir']:.0f}° → Arrow TO {d['to_dir']:.0f}° (dx={d['dx']:.1f}, dy={d['dy']:.1f})")
                         
                             # Update layout
                             fig.update_layout(
                                 xaxis_title=f"Previous {hours} Hours",
                                 yaxis_title="Wind Speed (mph)",
                                 hovermode='x unified',
-                                height=400,
+                                height=450,
                                 showlegend=True,
                                 legend=dict(
                                     orientation="h",
@@ -627,16 +649,22 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                                     xanchor="right",
                                     x=1
                                 ),
+                                margin=dict(l=60, r=20, t=80, b=80),
                                 xaxis=dict(
                                     tickformat='%b %d %I%p',
-                                    tickangle=-45
+                                    tickangle=-45,
+                                    range=[min(speed_times), max(speed_times)]
                                 ),
                                 yaxis=dict(
                                     rangemode='tozero'
                                 )
                             )
                             
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, config={
+                                'displayModeBar': False,
+                                'scrollZoom': False,
+                                'doubleClick': False
+                            })
                         
                     except ImportError:
                         st.error("Please install plotly: pip install plotly")
@@ -756,7 +784,11 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                             fig.update_yaxes(title_text="Temperature (°F)", secondary_y=False)
                             fig.update_yaxes(title_text="Humidity (%)", secondary_y=True)
                             
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, config={
+                                'displayModeBar': False,
+                                'scrollZoom': False,
+                                'doubleClick': False
+                            })
                         else:
                             st.error("No data points found.")
                     
@@ -862,4 +894,4 @@ with st.spinner("Fetching data from Campbell Cloud..."):
 
 # Footer
 st.markdown("---")
-st.caption("Data from Campbell Cloud API • Built by Chauncey")
+st.caption("Data from Campbell Cloud API • Built by Chauncey • v1.01")
