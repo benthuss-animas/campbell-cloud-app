@@ -28,18 +28,45 @@ def display_current_metrics(config, token, datastreams):
                 if field_name == "WS_mph_Max":
                     gust_datastream_id = ds.get("id")
     
-    peak_gust = None
+    peak_gust_1h = None
+    peak_gust_24h = None
+    peak_gust_72h = None
+    
     if gust_datastream_id:
         end_time = int(datetime.now().timestamp() * 1000)
-        start_time = end_time - (24 * 60 * 60 * 1000)
         
-        gust_history = get_historical_datapoints(config["BASE_URL"], token, config["ORGANIZATION_ID"], 
-                                                 gust_datastream_id, start_time, end_time)
-        if gust_history and gust_history.get("data"):
-            gust_points = gust_history["data"]
+        start_time_1h = end_time - (2 * 60 * 60 * 1000)
+        gust_history_1h = get_historical_datapoints(config["BASE_URL"], token, config["ORGANIZATION_ID"], 
+                                                     gust_datastream_id, start_time_1h, end_time, limit=12)
+        if gust_history_1h and gust_history_1h.get("data"):
+            gust_points = gust_history_1h["data"]
             if gust_points:
                 max_point = max(gust_points, key=lambda x: x["value"])
-                peak_gust = {
+                peak_gust_1h = {
+                    "value": max_point["value"],
+                    "timestamp": datetime.fromtimestamp(max_point["ts"] / 1000, tz=ZoneInfo("America/Denver"))
+                }
+        
+        start_time_24h = end_time - (24 * 60 * 60 * 1000)
+        gust_history_24h = get_historical_datapoints(config["BASE_URL"], token, config["ORGANIZATION_ID"], 
+                                                      gust_datastream_id, start_time_24h, end_time)
+        if gust_history_24h and gust_history_24h.get("data"):
+            gust_points = gust_history_24h["data"]
+            if gust_points:
+                max_point = max(gust_points, key=lambda x: x["value"])
+                peak_gust_24h = {
+                    "value": max_point["value"],
+                    "timestamp": datetime.fromtimestamp(max_point["ts"] / 1000, tz=ZoneInfo("America/Denver"))
+                }
+        
+        start_time_72h = end_time - (72 * 60 * 60 * 1000)
+        gust_history_72h = get_historical_datapoints(config["BASE_URL"], token, config["ORGANIZATION_ID"], 
+                                                      gust_datastream_id, start_time_72h, end_time)
+        if gust_history_72h and gust_history_72h.get("data"):
+            gust_points = gust_history_72h["data"]
+            if gust_points:
+                max_point = max(gust_points, key=lambda x: x["value"])
+                peak_gust_72h = {
                     "value": max_point["value"],
                     "timestamp": datetime.fromtimestamp(max_point["ts"] / 1000, tz=ZoneInfo("America/Denver"))
                 }
@@ -62,8 +89,14 @@ def display_current_metrics(config, token, datastreams):
         cardinal = degrees_to_cardinal(direction)
         grid_html += f'<div class="metric-card" style="background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);"><p class="metric-label" style="color: #93c5fd;">Wind Direction</p><h2 class="metric-value">{direction:.0f}° ({cardinal})</h2><p style="color: #93c5fd; font-size: 11px; margin: 8px 0 0 0;">{data["timestamp"].strftime("%b %d %I:%M %p")}</p></div>'
     
-    if peak_gust:
-        grid_html += f'<div class="metric-card" style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);"><p class="metric-label" style="color: #fed7aa;">24-Hour Peak Gust</p><h2 class="metric-value">{peak_gust["value"]:.1f} mph</h2><p style="color: #fed7aa; font-size: 11px; margin: 8px 0 0 0;">{peak_gust["timestamp"].strftime("%b %d %I:%M %p")}</p></div>'
+    if peak_gust_1h:
+        grid_html += f'<div class="metric-card" style="background: linear-gradient(135deg, #facc15 0%, #eab308 100%);"><p class="metric-label" style="color: #422006;">1-Hour Peak Gust</p><h2 class="metric-value">{peak_gust_1h["value"]:.1f} mph</h2><p style="color: #422006; font-size: 11px; margin: 8px 0 0 0;">{peak_gust_1h["timestamp"].strftime("%b %d %I:%M %p")}</p></div>'
+    
+    if peak_gust_24h:
+        grid_html += f'<div class="metric-card" style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);"><p class="metric-label" style="color: #fed7aa;">24-Hour Peak Gust</p><h2 class="metric-value">{peak_gust_24h["value"]:.1f} mph</h2><p style="color: #fed7aa; font-size: 11px; margin: 8px 0 0 0;">{peak_gust_24h["timestamp"].strftime("%b %d %I:%M %p")}</p></div>'
+    
+    if peak_gust_72h:
+        grid_html += f'<div class="metric-card" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);"><p class="metric-label" style="color: #fecaca;">72-Hour Peak Gust</p><h2 class="metric-value">{peak_gust_72h["value"]:.1f} mph</h2><p style="color: #fecaca; font-size: 11px; margin: 8px 0 0 0;">{peak_gust_72h["timestamp"].strftime("%b %d %I:%M %p")}</p></div>'
     
     if "RH" in current_measurements:
         data = current_measurements["RH"]
