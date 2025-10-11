@@ -137,17 +137,53 @@ with st.sidebar:
     st.markdown("---")
     st.caption("v1.0 • Built by Chauncey")
 
+# Custom CSS for title and top margin
+st.markdown("""
+<style>
+    h1 {
+        font-size: 1.8rem !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    .main > div {
+        padding-top: 0 !important;
+    }
+    .block-container {
+        padding-top: 4rem !important;
+    }
+    button[kind="secondary"] {
+        padding: 0.25rem 0.5rem;
+        min-height: unset;
+    }
+    button[kind="secondary"] p {
+        font-size: 0.8rem !important;
+    }
+    @media (max-width: 768px) {
+        h2 {
+            margin-bottom: 0.5rem !important;
+        }
+        .stPlotlyChart {
+            margin-top: -1rem !important;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Title
 st.title("Silverton Mountain Weather Station")
 
-# Auto-refresh option
-auto_refresh = st.checkbox("Auto-refresh every 5 minutes", value=False, disabled=True)
-
-if auto_refresh:
-    st.empty()
-    import time
-    time.sleep(300)
+# Refresh & Clear Cache button
+if st.button("🔄 Refresh & Clear Cache"):
+    st.cache_data.clear()
     st.rerun()
+
+# Auto-refresh option (hidden)
+# auto_refresh = st.checkbox("Auto-refresh every 5 minutes", value=False, disabled=True)
+# if auto_refresh:
+#     st.empty()
+#     import time
+#     time.sleep(300)
+#     st.rerun()
 
 st.markdown("---")
 
@@ -446,7 +482,10 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                                 margin=dict(t=20, b=80, l=20, r=20)
                             )
                             
-                            st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
+                            st.plotly_chart(fig, use_container_width=True, config={
+                                'staticPlot': True,
+                                'displayModeBar': False
+                            })
                             
                             # Helper function to convert degrees to cardinal direction
                             def degrees_to_cardinal(degrees):
@@ -661,9 +700,8 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                             )
                             
                             st.plotly_chart(fig, use_container_width=True, config={
-                                'displayModeBar': False,
-                                'scrollZoom': False,
-                                'doubleClick': False
+                                'staticPlot': True,
+                                'displayModeBar': False
                             })
                         
                     except ImportError:
@@ -785,9 +823,8 @@ with st.spinner("Fetching data from Campbell Cloud..."):
                             fig.update_yaxes(title_text="Humidity (%)", secondary_y=True)
                             
                             st.plotly_chart(fig, use_container_width=True, config={
-                                'displayModeBar': False,
-                                'scrollZoom': False,
-                                'doubleClick': False
+                                'staticPlot': True,
+                                'displayModeBar': False
                             })
                         else:
                             st.error("No data points found.")
@@ -894,4 +931,4 @@ with st.spinner("Fetching data from Campbell Cloud..."):
 
 # Footer
 st.markdown("---")
-st.caption("Data from Campbell Cloud API • Built by Chauncey • v1.01")
+st.caption("Data from Campbell Cloud API • Built by Chauncey • v1.02")
