@@ -4,6 +4,7 @@ from plotly.subplots import make_subplots
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from api.campbell_client import get_historical_datapoints
+from streamlit import runtime
 
 def display_temp_humidity_chart(config, token, datastreams):
     """Display temperature and humidity history chart"""
@@ -55,6 +56,11 @@ def display_temp_humidity_chart(config, token, datastreams):
                     humidity_times = [datetime.fromtimestamp(p['ts']/1000, tz=ZoneInfo("America/Denver")) for p in humidity_points]
                     humidity_values = [p['value'] for p in humidity_points]
                     
+                    temp_range = max(temp_values) - min(temp_values)
+                    temp_padding = temp_range * 4
+                    temp_min = min(temp_values) - temp_padding
+                    temp_max = max(temp_values) + temp_padding
+                    
                     fig = make_subplots(specs=[[{"secondary_y": True}]])
                     
                     fig.add_trace(
@@ -83,6 +89,14 @@ def display_temp_humidity_chart(config, token, datastreams):
                         secondary_y=True
                     )
                     
+                    fig.add_hline(
+                        y=32,
+                        line_dash="dash",
+                        line_color="blue",
+                        line_width=2,
+                        secondary_y=False
+                    )
+                    
                     fig.update_layout(
                         xaxis_title=f"Previous {temp_hours} Hours",
                         hovermode='x unified',
@@ -98,15 +112,24 @@ def display_temp_humidity_chart(config, token, datastreams):
                         margin=dict(l=60, r=20, t=20, b=80),
                         xaxis=dict(
                             tickformat='%b %d %I%p',
-                            tickangle=-45
+                            tickangle=-45,
+                            range=[min(temp_times), max(temp_times)],
+                            nticks=10
                         )
                     )
                     
-                    fig.update_yaxes(title_text="Temperature (°F)", secondary_y=False)
-                    fig.update_yaxes(title_text="Humidity (%)", secondary_y=True)
+                    fig.update_yaxes(title_text="Temperature (°F)", range=[temp_min, temp_max], secondary_y=False)
+                    fig.update_yaxes(title_text="Humidity (%)", range=[0, 100], secondary_y=True)
+                    
+                    try:
+                        session_info = runtime.get_instance()._session_mgr.list_active_sessions()[0]
+                        is_mobile = session_info.client.request.headers.get("User-Agent", "").lower()
+                        is_mobile = any(x in is_mobile for x in ["mobile", "android", "iphone", "ipad"])
+                    except:
+                        is_mobile = False
                     
                     st.plotly_chart(fig, use_container_width=True, config={
-                        'staticPlot': True,
+                        'staticPlot': is_mobile,
                         'displayModeBar': False
                     })
                 else:

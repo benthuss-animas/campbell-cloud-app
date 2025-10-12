@@ -95,12 +95,12 @@ def display_wind_rose(config, token, datastreams):
                         legend=dict(
                             orientation="h",
                             yanchor="bottom",
-                            y=0,
+                            y=-0.15,
                             xanchor="center",
                             x=0.5
                         ),
                         height=500,
-                        margin=dict(t=0, b=20, l=30, r=30)
+                        margin=dict(t=0, b=60, l=30, r=30)
                     )
                     
                     st.plotly_chart(fig, use_container_width=True, config={

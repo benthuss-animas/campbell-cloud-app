@@ -93,4 +93,4 @@ with st.spinner("Fetching data from Campbell Cloud..."):
         st.exception(e)
 
 st.markdown("---")
-st.caption("Data from Campbell Cloud API • Built by Chauncey • v1.03")
+st.caption("Data from Campbell Cloud API • Built by Chauncey • v1.04")

@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from api.campbell_client import get_historical_datapoints
+from streamlit import runtime
 
 def display_wind_chart(config, token, datastreams):
     """Display wind speed and gust history chart"""
@@ -87,7 +88,8 @@ def display_wind_chart(config, token, datastreams):
                     ))
                     
                     dir_lookup_for_arrows = {dir_times[i]: dir_values[i] for i in range(len(dir_times))}
-                    max_speed = max(speed_values + gust_values)
+                    max_gust = max(gust_values)
+                    y_max = max(max_gust + 10, 55)
                     
                     arrow_interval = max(1, len(speed_points) // 30)
                     for i in range(0, len(speed_points), arrow_interval):
@@ -104,7 +106,7 @@ def display_wind_chart(config, token, datastreams):
                             
                             fig.add_annotation(
                                 x=time_val,
-                                y=max_speed * 1.05,
+                                y=y_max * 0.95,
                                 ax=dx,
                                 ay=dy,
                                 xref='x',
@@ -136,15 +138,23 @@ def display_wind_chart(config, token, datastreams):
                         xaxis=dict(
                             tickformat='%b %d %I%p',
                             tickangle=-45,
-                            range=[min(speed_times), max(speed_times)]
+                            range=[min(speed_times), max(speed_times)],
+                            nticks=10
                         ),
                         yaxis=dict(
-                            rangemode='tozero'
+                            range=[0, y_max]
                         )
                     )
                     
+                    try:
+                        session_info = runtime.get_instance()._session_mgr.list_active_sessions()[0]
+                        is_mobile = session_info.client.request.headers.get("User-Agent", "").lower()
+                        is_mobile = any(x in is_mobile for x in ["mobile", "android", "iphone", "ipad"])
+                    except:
+                        is_mobile = False
+                    
                     st.plotly_chart(fig, use_container_width=True, config={
-                        'staticPlot': True,
+                        'staticPlot': is_mobile,
                         'displayModeBar': False
                     })
             else:
