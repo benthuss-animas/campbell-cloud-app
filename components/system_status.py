@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from api.campbell_client import get_latest_datapoint
@@ -9,6 +10,7 @@ def display_system_status(config, token, datastreams):
     panel_temp = None
     battery_timestamp = None
     temp_timestamp = None
+    all_status_data = []
     
     for ds in datastreams:
         metadata = ds.get("metadata", {})
@@ -18,12 +20,20 @@ def display_system_status(config, token, datastreams):
         if table_name == "Twelve_Hours":
             latest = get_latest_datapoint(config["BASE_URL"], token, config["ORGANIZATION_ID"], ds.get("id"))
             if latest and latest.get("data"):
+                value = latest["data"][0]["value"]
+                timestamp = datetime.fromtimestamp(latest["data"][0]["ts"] / 1000, tz=ZoneInfo("America/Denver"))
+                all_status_data.append({
+                    'Field': field_name,
+                    'Value': value,
+                    'Timestamp': timestamp
+                })
+                
                 if field_name == "BattV_Min":
-                    battery_voltage = latest["data"][0]["value"]
-                    battery_timestamp = datetime.fromtimestamp(latest["data"][0]["ts"] / 1000, tz=ZoneInfo("America/Denver"))
+                    battery_voltage = value
+                    battery_timestamp = timestamp
                 elif field_name == "PTemp_C_Max":
-                    panel_temp = latest["data"][0]["value"]
-                    temp_timestamp = datetime.fromtimestamp(latest["data"][0]["ts"] / 1000, tz=ZoneInfo("America/Denver"))
+                    panel_temp = value
+                    temp_timestamp = timestamp
     
     if battery_voltage is not None or panel_temp is not None:
         st.markdown("---")
@@ -91,3 +101,10 @@ def display_system_status(config, token, datastreams):
                 age_text = f"{age_hours:.1f} hours old"
             
             st.caption(f"📅 Last updated: {latest_timestamp.strftime('%Y-%m-%d %I:%M:%S %p')} ({age_text})")
+        
+        if all_status_data:
+            with st.expander("📊 View All System Data"):
+                df = pd.DataFrame(all_status_data)
+                df['Value'] = df['Value'].astype(str)
+                df['Timestamp'] = df['Timestamp'].apply(lambda t: t.strftime('%Y-%m-%d %I:%M %p'))
+                st.dataframe(df, width="stretch", height=400)

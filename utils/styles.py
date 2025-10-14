@@ -25,6 +25,9 @@ def apply_custom_css():
         button[kind="secondary"] p {
             font-size: 0.8rem !important;
         }
+        .modebar {
+            margin-top: -20px !important;
+        }
         @media (max-width: 768px) {
             h2 {
                 margin-bottom: 0.5rem !important;
@@ -42,9 +45,14 @@ def get_metric_card_css():
     <style>
     .metrics-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 15px;
         margin-bottom: 20px;
+    }
+    @media (max-width: 768px) {
+        .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
     }
     .metric-card {
         padding: 20px;

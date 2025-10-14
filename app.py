@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -13,10 +14,13 @@ from components.temp_humidity import display_temp_humidity_chart
 from components.system_status import display_system_status
 
 st.set_page_config(
-    page_title="Silverton Mountain Weather",
-    page_icon="❄️",
+    page_title="Silverton Mountain Weather Station",
+    page_icon="img/apple-touch-icon.png",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
+    # menu_items={
+    #     'About': "Silverton Mountain Weather Station • Built by Chauncey"
+    # }
 )
 
 config = load_config()
@@ -27,11 +31,11 @@ if not check_password(config["APP_PASSWORD"]):
 with st.sidebar:
     st.header("⚙️ Menu")
     
-    if st.button("🔄 Refresh & Clear Cache", use_container_width=True):
+    if st.button("🔄 Refresh & Clear Cache", width="stretch"):
         st.cache_data.clear()
         st.rerun()
     
-    if st.button("🚪 Logout", use_container_width=True):
+    if st.button("🚪 Logout", width="stretch"):
         st.session_state.authenticated = False
         st.query_params.clear()
         st.rerun()
@@ -50,11 +54,41 @@ with st.sidebar:
 
 apply_custom_css()
 
-st.title("Silverton Mountain Weather Station")
+st.title("Silverton Mountain Weather Station (12,280')")
 
-if st.button("🔄 Refresh & Clear Cache"):
-    st.cache_data.clear()
-    st.rerun()
+if 'auto_refresh_enabled' not in st.session_state:
+    st.session_state.auto_refresh_enabled = False
+
+st.markdown(f"""
+<style>
+.stButton > button {{
+    width: 100%;
+}}
+.stButton {{
+    margin-top: 0px !important;
+}}
+div[data-testid="column"]:nth-child(2) .stButton > button {{
+    {"background-color: #28a745; color: white;" if st.session_state.auto_refresh_enabled else ""}
+}}
+</style>
+""", unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns([0.15, 0.15, 0.7])
+with col1:
+    if st.button("🔄 Refresh & Clear Cache", width="stretch"):
+        st.cache_data.clear()
+        st.rerun()
+with col2:
+    button_label = "✅ Auto-refresh (ON)" if st.session_state.auto_refresh_enabled else "🔄 Auto-refresh every 5 min"
+    if st.button(button_label, width="stretch", key="auto_refresh_btn"):
+        st.session_state.auto_refresh_enabled = not st.session_state.auto_refresh_enabled
+        st.rerun()
+
+if st.session_state.auto_refresh_enabled:
+    count = st_autorefresh(interval=300000, limit=144, debounce=True, key="data_refresher")
+    if count >= 144:
+        st.session_state.auto_refresh_enabled = False
+        st.rerun()
 
 st.markdown("---")
 
@@ -93,4 +127,4 @@ with st.spinner("Fetching data from Campbell Cloud..."):
         st.exception(e)
 
 st.markdown("---")
-st.caption("Data from Campbell Cloud API • Built by Chauncey • v1.04")
+st.caption("Data from Campbell Cloud API • <a href='https://animasdigital.com' target='_blank'>Built by Chauncey</a> • v1.1", unsafe_allow_html=True)

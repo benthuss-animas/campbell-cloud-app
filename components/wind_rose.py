@@ -6,11 +6,33 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from utils.formatters import degrees_to_cardinal
 from api.campbell_client import get_historical_datapoints
+from browser_detection import browser_detection_engine
 
 def display_wind_rose(config, token, datastreams):
     """Display 24-hour wind rose chart"""
+    if 'browser_info' not in st.session_state:
+        browser_info = browser_detection_engine()
+        st.session_state.browser_info = browser_info
+    else:
+        browser_info = st.session_state.browser_info
+    
+    is_mobile_device = browser_info.get('isMobile', False) or browser_info.get('isTablet', False)
+    
     st.markdown("---")
-    st.markdown('<h3 id="24-hour-wind-rose">24-Hour Wind Rose</h3>', unsafe_allow_html=True)
+    st.subheader("🧭 Wind Rose")
+    
+    time_range = st.radio(
+        "Select time range:",
+        ["24 Hours", "72 Hours"],
+        horizontal=True,
+        index=0,
+        key="wind_rose_time_range"
+    )
+    
+    is_mobile = st.checkbox("Enable touch-friendly mode", value=is_mobile_device, key="wind_rose_mobile_mode", 
+                           help="Enable for better experience on mobile devices")
+    
+    hours = 24 if time_range == "24 Hours" else 72
     
     wind_speed_id = None
     wind_dir_id = None
@@ -27,9 +49,9 @@ def display_wind_rose(config, token, datastreams):
                 wind_dir_id = ds.get("id")
     
     if wind_speed_id and wind_dir_id:
-        with st.spinner("Generating wind rose from last 24 hours of data..."):
+        with st.spinner(f"Generating wind rose from last {hours} hours of data..."):
             end_time = int(datetime.now().timestamp() * 1000)
-            start_time = end_time - (24 * 60 * 60 * 1000)
+            start_time = end_time - (hours * 60 * 60 * 1000)
             
             wind_speed_data = get_historical_datapoints(config["BASE_URL"], token, config["ORGANIZATION_ID"],
                                                        wind_speed_id, start_time, end_time)
@@ -99,14 +121,11 @@ def display_wind_rose(config, token, datastreams):
                             xanchor="center",
                             x=0.5
                         ),
-                        height=500,
+                        # height=500,
                         margin=dict(t=0, b=60, l=30, r=30)
                     )
                     
-                    st.plotly_chart(fig, use_container_width=True, config={
-                        'staticPlot': True,
-                        'displayModeBar': False
-                    })
+                    st.plotly_chart(fig, config={'staticPlot': is_mobile, 'responsive': True})
                     
                     timestamps = [point["ts"] for point in speed_points if point["ts"] in dir_lookup]
                     if timestamps:
@@ -128,7 +147,7 @@ def display_wind_rose(config, token, datastreams):
                     with col3:
                         st.metric("Avg Direction", f"{avg_direction:.0f}° ({cardinal})")
                 else:
-                    st.warning("No matching wind data found for the last 24 hours.")
+                    st.warning(f"No matching wind data found for the last {hours} hours.")
             else:
                 st.error("Failed to fetch historical wind data.")
     else:

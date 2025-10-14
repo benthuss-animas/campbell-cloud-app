@@ -18,7 +18,21 @@ def get_access_token(base_url, username, password):
     response.raise_for_status()
     return response.json()["access_token"]
 
+def _handle_auth_error(func):
+    """Decorator to handle 401 errors by clearing token cache and auto-retrying"""
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 401:
+                get_access_token.clear()
+                st.cache_data.clear()
+                st.rerun()
+            raise
+    return wrapper
+
 @st.cache_data(ttl=300)
+@_handle_auth_error
 def get_datastreams(base_url, token, organization_id):
     """Get all datastreams for the organization"""
     url = f"{base_url}/api/v1/organizations/{organization_id}/datastreams"
@@ -30,6 +44,7 @@ def get_datastreams(base_url, token, organization_id):
     return {"data": response.json(), "fetched_at": fetch_time}
 
 @st.cache_data(ttl=300)
+@_handle_auth_error
 def get_latest_datapoint(base_url, token, organization_id, datastream_id):
     """Get the latest datapoint for a specific datastream"""
     url = f"{base_url}/api/v1/organizations/{organization_id}/datastreams/{datastream_id}/datapoints/last"
@@ -42,6 +57,7 @@ def get_latest_datapoint(base_url, token, organization_id, datastream_id):
     return None
 
 @st.cache_data(ttl=300)
+@_handle_auth_error
 def get_historical_datapoints(base_url, token, organization_id, datastream_id, start_epoch, end_epoch, limit=15000):
     """Get historical datapoints for a specific datastream"""
     url = f"{base_url}/api/v1/organizations/{organization_id}/datastreams/{datastream_id}/datapoints"

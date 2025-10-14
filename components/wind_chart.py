@@ -1,13 +1,22 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from api.campbell_client import get_historical_datapoints
-from streamlit import runtime
+from browser_detection import browser_detection_engine
 
 def display_wind_chart(config, token, datastreams):
     """Display wind speed and gust history chart"""
+    if 'browser_info' not in st.session_state:
+        browser_info = browser_detection_engine()
+        st.session_state.browser_info = browser_info
+    else:
+        browser_info = st.session_state.browser_info
+    
+    is_mobile_device = browser_info.get('isMobile', False) or browser_info.get('isTablet', False)
+    
     st.markdown("---")
     st.subheader("📈 Wind Speed & Gusts History")
     
@@ -15,8 +24,12 @@ def display_wind_chart(config, token, datastreams):
         "Select time range:",
         ["24 Hours", "72 Hours"],
         horizontal=True,
-        index=0
+        index=0,
+        key="wind_time_range"
     )
+    
+    is_mobile = st.checkbox("Enable touch-friendly mode", value=is_mobile_device, key="wind_chart_mobile_mode", 
+                           help="Enable for better experience on mobile devices")
     
     hours = 24 if time_range == "24 Hours" else 72
     
@@ -68,12 +81,14 @@ def display_wind_chart(config, token, datastreams):
                     
                     fig = go.Figure()
                     
+                    avg_wind_speed = np.mean(speed_values)
+                    
                     fig.add_trace(go.Scatter(
                         x=speed_times,
                         y=speed_values,
                         fill='tozeroy',
                         fillcolor='rgba(76, 175, 80, 0.7)',
-                        line=dict(color='rgba(76, 175, 80, 1)', width=1),
+                        line=dict(color='rgba(76, 175, 80, 1)', width=2, shape='spline'),
                         name='Wind Speed',
                         hovertemplate='%{y:.1f} mph<extra></extra>'
                     ))
@@ -86,6 +101,15 @@ def display_wind_chart(config, token, datastreams):
                         name='Wind Gusts',
                         hovertemplate='%{y:.1f} mph<extra></extra>'
                     ))
+                    
+                    fig.add_hline(
+                        y=avg_wind_speed,
+                        line_dash="dash",
+                        line_color="rgba(76, 175, 80, 0.8)",
+                        line_width=2,
+                        annotation_text=f"Avg {avg_wind_speed:.0f}mph",
+                        annotation_position="right"
+                    )
                     
                     dir_lookup_for_arrows = {dir_times[i]: dir_values[i] for i in range(len(dir_times))}
                     max_gust = max(gust_values)
@@ -121,42 +145,46 @@ def display_wind_chart(config, token, datastreams):
                                 standoff=0
                             )
                     
-                    fig.update_layout(
-                        xaxis_title=f"Previous {hours} Hours",
-                        yaxis_title="Wind Speed (mph)",
-                        hovermode='x unified',
-                        height=350,
-                        showlegend=True,
-                        legend=dict(
+                    layout_config = {
+                        'xaxis_title': f"Previous {hours} Hours",
+                        'yaxis_title': "Wind Speed (mph)",
+                        'hovermode': 'x unified',
+                        'showlegend': True,
+                        'legend': dict(
                             orientation="h",
-                            yanchor="bottom",
-                            y=1.02,
+                            yanchor="top",
+                            y=1.08,
                             xanchor="right",
                             x=1
                         ),
-                        margin=dict(l=60, r=20, t=20, b=80),
-                        xaxis=dict(
+                        'margin': dict(l=60, r=60, t=20, b=80),
+                        'xaxis': dict(
                             tickformat='%b %d %I%p',
                             tickangle=-45,
                             range=[min(speed_times), max(speed_times)],
                             nticks=10
                         ),
-                        yaxis=dict(
+                        'yaxis': dict(
                             range=[0, y_max]
                         )
-                    )
+                    }
                     
-                    try:
-                        session_info = runtime.get_instance()._session_mgr.list_active_sessions()[0]
-                        is_mobile = session_info.client.request.headers.get("User-Agent", "").lower()
-                        is_mobile = any(x in is_mobile for x in ["mobile", "android", "iphone", "ipad"])
-                    except:
-                        is_mobile = False
+                    if is_mobile:
+                        layout_config['height'] = 350
                     
-                    st.plotly_chart(fig, use_container_width=True, config={
-                        'staticPlot': is_mobile,
-                        'displayModeBar': False
-                    })
+                    fig.update_layout(**layout_config)
+                    
+                    st.plotly_chart(fig, config={'staticPlot': is_mobile, 'responsive': True})
+                    
+                    with st.expander("📊 View Raw Data"):
+                        df = pd.DataFrame({
+                            'Time': [t.strftime('%Y-%m-%d %I:%M %p') for t in speed_times],
+                            'Wind Speed (mph)': speed_values,
+                            'Wind Gust (mph)': [gust_values[gust_times.index(t)] if t in gust_times else None for t in speed_times],
+                            'Wind Direction (°)': [dir_values[dir_times.index(t)] if t in dir_times else None for t in speed_times]
+                        })
+                        df = df.iloc[::-1].reset_index(drop=True)
+                        st.dataframe(df, width="stretch", height=400)
             else:
                 st.error(f"Failed to fetch {hours}-hour wind data.")
     else:

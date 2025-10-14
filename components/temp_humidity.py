@@ -1,13 +1,22 @@
 import streamlit as st
+import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from api.campbell_client import get_historical_datapoints
-from streamlit import runtime
+from browser_detection import browser_detection_engine
 
 def display_temp_humidity_chart(config, token, datastreams):
     """Display temperature and humidity history chart"""
+    if 'browser_info' not in st.session_state:
+        browser_info = browser_detection_engine()
+        st.session_state.browser_info = browser_info
+    else:
+        browser_info = st.session_state.browser_info
+    
+    is_mobile_device = browser_info.get('isMobile', False) or browser_info.get('isTablet', False)
+    
     st.markdown("---")
     st.subheader("🌡️ Temperature & Humidity History")
     
@@ -67,10 +76,9 @@ def display_temp_humidity_chart(config, token, datastreams):
                         go.Scatter(
                             x=temp_times,
                             y=temp_values,
-                            mode='lines+markers',
+                            mode='lines',
                             name='Temperature',
-                            line=dict(color='#FF0000', width=2),
-                            marker=dict(size=4),
+                            line=dict(color='#FF0000', width=2, shape='spline'),
                             hovertemplate='%{y:.1f} °F<extra></extra>'
                         ),
                         secondary_y=False
@@ -80,10 +88,9 @@ def display_temp_humidity_chart(config, token, datastreams):
                         go.Scatter(
                             x=humidity_times,
                             y=humidity_values,
-                            mode='lines+markers',
+                            mode='lines',
                             name='Humidity',
-                            line=dict(color='#87CEEB', width=2),
-                            marker=dict(size=4),
+                            line=dict(color='#87CEEB', width=2, shape='spline'),
                             hovertemplate='%{y:.0f}%<extra></extra>'
                         ),
                         secondary_y=True
@@ -92,46 +99,52 @@ def display_temp_humidity_chart(config, token, datastreams):
                     fig.add_hline(
                         y=32,
                         line_dash="dash",
-                        line_color="blue",
+                        line_color="#60a5fa",
                         line_width=2,
                         secondary_y=False
                     )
                     
-                    fig.update_layout(
-                        xaxis_title=f"Previous {temp_hours} Hours",
-                        hovermode='x unified',
-                        height=350,
-                        showlegend=True,
-                        legend=dict(
+                    is_mobile = st.checkbox("Enable touch-friendly mode", value=is_mobile_device, key="temp_mobile_mode", 
+                                           help="Enable for better experience on mobile devices")
+                    
+                    layout_config = {
+                        'xaxis_title': f"Previous {temp_hours} Hours",
+                        'hovermode': 'x unified',
+                        'showlegend': True,
+                        'legend': dict(
                             orientation="h",
                             yanchor="bottom",
                             y=1.02,
                             xanchor="right",
                             x=1
                         ),
-                        margin=dict(l=60, r=20, t=20, b=80),
-                        xaxis=dict(
+                        'margin': dict(l=60, r=20, t=20, b=80),
+                        'xaxis': dict(
                             tickformat='%b %d %I%p',
                             tickangle=-45,
                             range=[min(temp_times), max(temp_times)],
                             nticks=10
                         )
-                    )
+                    }
+                    
+                    if is_mobile:
+                        layout_config['height'] = 350
+                    
+                    fig.update_layout(**layout_config)
                     
                     fig.update_yaxes(title_text="Temperature (°F)", range=[temp_min, temp_max], secondary_y=False)
                     fig.update_yaxes(title_text="Humidity (%)", range=[0, 100], secondary_y=True)
                     
-                    try:
-                        session_info = runtime.get_instance()._session_mgr.list_active_sessions()[0]
-                        is_mobile = session_info.client.request.headers.get("User-Agent", "").lower()
-                        is_mobile = any(x in is_mobile for x in ["mobile", "android", "iphone", "ipad"])
-                    except:
-                        is_mobile = False
+                    st.plotly_chart(fig, config={'staticPlot': is_mobile, 'responsive': True})
                     
-                    st.plotly_chart(fig, use_container_width=True, config={
-                        'staticPlot': is_mobile,
-                        'displayModeBar': False
-                    })
+                    with st.expander("📊 View Raw Data"):
+                        df = pd.DataFrame({
+                            'Time': [t.strftime('%Y-%m-%d %I:%M %p') for t in temp_times],
+                            'Temperature (°F)': temp_values,
+                            'Humidity (%)': [humidity_values[humidity_times.index(t)] if t in humidity_times else None for t in temp_times]
+                        })
+                        df = df.iloc[::-1].reset_index(drop=True)
+                        st.dataframe(df, width="stretch", height=400)
                 else:
                     st.error("No data points found.")
             else:

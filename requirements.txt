@@ -1,4 +1,5 @@
 streamlit
+streamlit-browser-engine
 requests
 plotly
 pandas

@@ -158,13 +158,13 @@ def display_current_metrics(config, token, datastreams):
     
     if "AirTF_Avg" in current_measurements:
         data = current_measurements["AirTF_Avg"]
-        grid_html += f'<div class="metric-card" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);"><p class="metric-label" style="color: #fecaca;">Temperature</p><h2 class="metric-value">{data["value"]:.1f}°F</h2><p style="color: #fecaca; font-size: 11px; margin: 8px 0 0 0;">{data["timestamp"].strftime("%b %d %I:%M %p")}</p></div>'
+        grid_html += f'<div class="metric-card" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);"><p class="metric-label" style="color: #e9d5ff;">Temperature</p><h2 class="metric-value">{data["value"]:.1f}°F</h2><p style="color: #e9d5ff; font-size: 11px; margin: 8px 0 0 0;">{data["timestamp"].strftime("%b %d %I:%M %p")}</p></div>'
     
     if temp_low_24h:
         grid_html += f'<div class="metric-card" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);"><p class="metric-label" style="color: #e0f2fe;">24-Hour Low</p><h2 class="metric-value">{temp_low_24h["value"]:.1f}°F</h2><p style="color: #e0f2fe; font-size: 11px; margin: 8px 0 0 0;">{temp_low_24h["timestamp"].strftime("%b %d %I:%M %p")}</p></div>'
     
     if temp_high_24h:
-        grid_html += f'<div class="metric-card" style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);"><p class="metric-label" style="color: #ffedd5;">24-Hour High</p><h2 class="metric-value">{temp_high_24h["value"]:.1f}°F</h2><p style="color: #ffedd5; font-size: 11px; margin: 8px 0 0 0;">{temp_high_24h["timestamp"].strftime("%b %d %I:%M %p")}</p></div>'
+        grid_html += f'<div class="metric-card" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);"><p class="metric-label" style="color: #fce7f3;">24-Hour High</p><h2 class="metric-value">{temp_high_24h["value"]:.1f}°F</h2><p style="color: #fce7f3; font-size: 11px; margin: 8px 0 0 0;">{temp_high_24h["timestamp"].strftime("%b %d %I:%M %p")}</p></div>'
     
     grid_html += '</div>'
     
