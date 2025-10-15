@@ -105,7 +105,7 @@ def display_wind_chart(config, token, datastreams):
                     fig.add_hline(
                         y=avg_wind_speed,
                         line_dash="dash",
-                        line_color="rgba(76, 175, 80, 0.8)",
+                        line_color="rgba(38, 87, 40, 0.8)",
                         line_width=2,
                         annotation_text=f"Avg {avg_wind_speed:.0f}mph",
                         annotation_position="right"
