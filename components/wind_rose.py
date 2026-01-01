@@ -122,7 +122,7 @@ def display_wind_rose(config, token, datastreams):
                             x=0.5
                         ),
                         # height=500,
-                        margin=dict(t=0, b=60, l=30, r=30)
+                        margin=dict(t=40, b=60, l=30, r=60)
                     )
                     
                     st.plotly_chart(fig, config={'staticPlot': is_mobile, 'responsive': True})

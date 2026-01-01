@@ -125,4 +125,4 @@ with st.spinner("Fetching data from Campbell Cloud..."):
         st.exception(e)
 
 st.markdown("---")
-st.caption("Data from Campbell Cloud API • <a href='https://animasdigital.com' target='_blank'>Built by Chauncey</a> • v1.2", unsafe_allow_html=True)
+st.caption("Data from Campbell Cloud API • <a href='https://animasdigital.com' target='_blank'>Built by Chauncey</a> • v1.2.1", unsafe_allow_html=True)

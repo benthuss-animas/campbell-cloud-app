@@ -152,12 +152,12 @@ def display_wind_chart(config, token, datastreams):
                         'showlegend': True,
                         'legend': dict(
                             orientation="h",
-                            yanchor="top",
-                            y=1.08,
-                            xanchor="right",
-                            x=1
+                            yanchor="bottom",
+                            y=1.02,
+                            xanchor="left",
+                            x=0
                         ),
-                        'margin': dict(l=60, r=60, t=20, b=80),
+                        'margin': dict(l=60, r=60, t=50, b=80),
                         'xaxis': dict(
                             tickformat='%b %d %I%p',
                             tickangle=-45,

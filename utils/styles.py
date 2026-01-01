@@ -25,8 +25,11 @@ def apply_custom_css():
         button[kind="secondary"] p {
             font-size: 0.8rem !important;
         }
-        .modebar {
-            margin-top: -20px !important;
+        .stPlotlyChart {
+            overflow: visible !important;
+        }
+        .stPlotlyChart > div {
+            overflow: visible !important;
         }
         .stAlert {
             margin-top: 1rem !important;
