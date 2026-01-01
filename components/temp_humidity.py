@@ -118,7 +118,7 @@ def display_temp_humidity_chart(config, token, datastreams):
                             xanchor="left",
                             x=0
                         ),
-                        'margin': dict(l=60, r=60, t=50, b=80),
+                        'margin': dict(l=60, r=20, t=50, b=80),
                         'xaxis': dict(
                             tickformat='%b %d %I%p',
                             tickangle=-45,
