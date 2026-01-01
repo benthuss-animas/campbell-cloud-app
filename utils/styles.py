@@ -28,6 +28,9 @@ def apply_custom_css():
         .modebar {
             margin-top: -20px !important;
         }
+        .stAlert {
+            margin-top: 1rem !important;
+        }
         @media (max-width: 768px) {
             h2 {
                 margin-bottom: 0.5rem !important;

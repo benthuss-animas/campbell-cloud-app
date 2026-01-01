@@ -23,16 +23,16 @@ def display_wind_rose(config, token, datastreams):
     
     time_range = st.radio(
         "Select time range:",
-        ["24 Hours", "72 Hours"],
+        ["12 Hours", "24 Hours", "72 Hours"],
         horizontal=True,
-        index=0,
+        index=1,
         key="wind_rose_time_range"
     )
     
     is_mobile = st.checkbox("Enable touch-friendly mode", value=is_mobile_device, key="wind_rose_mobile_mode", 
                            help="Enable for better experience on mobile devices")
     
-    hours = 24 if time_range == "24 Hours" else 72
+    hours = 12 if time_range == "12 Hours" else 24 if time_range == "24 Hours" else 72
     
     wind_speed_id = None
     wind_dir_id = None

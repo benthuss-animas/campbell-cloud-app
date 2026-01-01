@@ -8,8 +8,10 @@ def display_system_status(config, token, datastreams):
     """Display battery and system status"""
     battery_voltage = None
     panel_temp = None
+    radio_strength = None
     battery_timestamp = None
     temp_timestamp = None
+    radio_timestamp = None
     all_status_data = []
     
     for ds in datastreams:
@@ -17,7 +19,7 @@ def display_system_status(config, token, datastreams):
         table_name = metadata.get("table", "")
         field_name = metadata.get("field", "")
         
-        if table_name == "Twelve_Hours":
+        if table_name == "Hourly" and field_name == "BattV_Min":
             latest = get_latest_datapoint(config["BASE_URL"], token, config["ORGANIZATION_ID"], ds.get("id"))
             if latest and latest.get("data"):
                 value = latest["data"][0]["value"]
@@ -25,21 +27,45 @@ def display_system_status(config, token, datastreams):
                 all_status_data.append({
                     'Field': field_name,
                     'Value': value,
-                    'Timestamp': timestamp
+                    'Timestamp': timestamp,
+                    'Table': table_name
                 })
-                
-                if field_name == "BattV_Min":
-                    battery_voltage = value
-                    battery_timestamp = timestamp
-                elif field_name == "PTemp_C_Max":
-                    panel_temp = value
-                    temp_timestamp = timestamp
+                battery_voltage = value
+                battery_timestamp = timestamp
+        
+        elif table_name == "Twelve_Hours" and field_name == "PTemp_C_Max":
+            latest = get_latest_datapoint(config["BASE_URL"], token, config["ORGANIZATION_ID"], ds.get("id"))
+            if latest and latest.get("data"):
+                value = latest["data"][0]["value"]
+                timestamp = datetime.fromtimestamp(latest["data"][0]["ts"] / 1000, tz=ZoneInfo("America/Denver"))
+                all_status_data.append({
+                    'Field': field_name,
+                    'Value': value,
+                    'Timestamp': timestamp,
+                    'Table': table_name
+                })
+                panel_temp = value
+                temp_timestamp = timestamp
+        
+        elif table_name == "RadioDiagnostics" and field_name == "RadioStrength":
+            latest = get_latest_datapoint(config["BASE_URL"], token, config["ORGANIZATION_ID"], ds.get("id"))
+            if latest and latest.get("data"):
+                value = latest["data"][0]["value"]
+                timestamp = datetime.fromtimestamp(latest["data"][0]["ts"] / 1000, tz=ZoneInfo("America/Denver"))
+                all_status_data.append({
+                    'Field': field_name,
+                    'Value': value,
+                    'Timestamp': timestamp,
+                    'Table': table_name
+                })
+                radio_strength = value
+                radio_timestamp = timestamp
     
-    if battery_voltage is not None or panel_temp is not None:
+    if battery_voltage is not None or panel_temp is not None or radio_strength is not None:
         st.markdown("---")
         st.subheader("🔋 System Status")
         
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         
         with col1:
             if battery_voltage is not None:
@@ -90,17 +116,39 @@ def display_system_status(config, token, datastreams):
                 temp_f = (panel_temp * 9/5) + 32
                 st.caption(f"= {temp_f:.1f} °F")
         
-        if battery_timestamp or temp_timestamp:
-            latest_timestamp = battery_timestamp or temp_timestamp
-            current_time = datetime.now(ZoneInfo("America/Denver"))
-            age_hours = (current_time - latest_timestamp).total_seconds() / 3600
-            
-            if age_hours < 1:
-                age_text = f"{int(age_hours * 60)} minutes old"
+        with col3:
+            if radio_strength is not None:
+                st.metric(
+                    label="Radio Strength",
+                    value=f"{radio_strength}",
+                    help=f"Updated: {radio_timestamp.strftime('%I:%M:%S %p')}"
+                )
+        
+        current_time = datetime.now(ZoneInfo("America/Denver"))
+        
+        if battery_timestamp:
+            battery_age_hours = (current_time - battery_timestamp).total_seconds() / 3600
+            if battery_age_hours < 1:
+                battery_age_text = f"{int(battery_age_hours * 60)} minutes old"
             else:
-                age_text = f"{age_hours:.1f} hours old"
-            
-            st.caption(f"📅 Last updated: {latest_timestamp.strftime('%Y-%m-%d %I:%M:%S %p')} ({age_text})")
+                battery_age_text = f"{battery_age_hours:.1f} hours old"
+            st.caption(f"🔋 Battery updated: {battery_timestamp.strftime('%Y-%m-%d %I:%M:%S %p')} ({battery_age_text}) - Hourly table")
+        
+        if temp_timestamp:
+            temp_age_hours = (current_time - temp_timestamp).total_seconds() / 3600
+            if temp_age_hours < 1:
+                temp_age_text = f"{int(temp_age_hours * 60)} minutes old"
+            else:
+                temp_age_text = f"{temp_age_hours:.1f} hours old"
+            st.caption(f"🌡️ Panel temp updated: {temp_timestamp.strftime('%Y-%m-%d %I:%M:%S %p')} ({temp_age_text}) - 12-Hour table")
+        
+        if radio_timestamp:
+            radio_age_hours = (current_time - radio_timestamp).total_seconds() / 3600
+            if radio_age_hours < 1:
+                radio_age_text = f"{int(radio_age_hours * 60)} minutes old"
+            else:
+                radio_age_text = f"{radio_age_hours:.1f} hours old"
+            st.caption(f"📡 Radio updated: {radio_timestamp.strftime('%Y-%m-%d %I:%M:%S %p')} ({radio_age_text}) - RadioDiagnostics table")
         
         if all_status_data:
             with st.expander("📊 View All System Data"):

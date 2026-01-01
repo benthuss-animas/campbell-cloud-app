@@ -22,13 +22,13 @@ def display_temp_humidity_chart(config, token, datastreams):
     
     temp_time_range = st.radio(
         "Select time range:",
-        ["24 Hours", "72 Hours"],
+        ["12 Hours", "24 Hours", "72 Hours"],
         horizontal=True,
-        index=0,
+        index=1,
         key="temp_time_range"
     )
     
-    temp_hours = 24 if temp_time_range == "24 Hours" else 72
+    temp_hours = 12 if temp_time_range == "12 Hours" else 24 if temp_time_range == "24 Hours" else 72
     
     temp_id = None
     humidity_id = None
