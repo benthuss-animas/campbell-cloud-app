@@ -135,7 +135,10 @@ def display_wind_rose(config, token, datastreams):
                     else:
                         time_range = "N/A"
                     
-                    avg_direction = np.mean(directions)
+                    dir_rad = np.deg2rad(directions)
+                    avg_sin = np.mean(np.sin(dir_rad))
+                    avg_cos = np.mean(np.cos(dir_rad))
+                    avg_direction = np.rad2deg(np.arctan2(avg_sin, avg_cos)) % 360
                     cardinal = degrees_to_cardinal(avg_direction)
                     
                     col1, col2, col3 = st.columns(3)
