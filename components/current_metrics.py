@@ -132,7 +132,7 @@ def display_current_metrics(config, token, datastreams):
     
     if null_details:
         st.caption("⚠️ Some sensor readings are missing — data may be incomplete.")
-        with st.expander("View details"):
+        with st.expander("Missing Data Detail"):
             for detail in null_details:
                 missing = len(detail["points"])
                 st.markdown(f"**{detail['label']}** — {missing} of {detail['total']} readings missing")

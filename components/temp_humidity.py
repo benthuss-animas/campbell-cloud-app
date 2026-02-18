@@ -73,7 +73,7 @@ def display_temp_humidity_chart(config, token, datastreams):
                         null_details.append({"label": "Humidity", "points": null_hums, "total": raw_hum_len})
                     if null_details:
                         st.caption("⚠️ Some sensor readings are missing — data may be incomplete.")
-                        with st.expander("View details"):
+                        with st.expander("Missing Data Detail"):
                             for detail in null_details:
                                 missing = len(detail["points"])
                                 st.markdown(f"**{detail['label']}** — {missing} of {detail['total']} readings missing")
