@@ -59,6 +59,14 @@ def display_temp_humidity_chart(config, token, datastreams):
                 humidity_points = humidity_data.get("data", [])
                 
                 if temp_points and humidity_points:
+                    raw_temp_len = len(temp_points)
+                    raw_hum_len = len(humidity_points)
+                    temp_points = [p for p in temp_points if p.get('value') is not None]
+                    humidity_points = [p for p in humidity_points if p.get('value') is not None]
+                    
+                    if len(temp_points) < raw_temp_len or len(humidity_points) < raw_hum_len:
+                        st.caption("⚠️ Some sensor readings are missing — data may be incomplete.")
+                    
                     temp_times = [datetime.fromtimestamp(p['ts']/1000, tz=ZoneInfo("America/Denver")) for p in temp_points]
                     temp_values = [p['value'] for p in temp_points]
                     
