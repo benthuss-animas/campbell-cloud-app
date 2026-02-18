@@ -39,6 +39,7 @@ def display_current_metrics(config, token, datastreams):
     peak_gust_72h = None
     temp_high_24h = None
     temp_low_24h = None
+    has_null_values = False
     
     if temp_datastream_id:
         end_time = int(datetime.now().timestamp() * 1000)
@@ -46,7 +47,10 @@ def display_current_metrics(config, token, datastreams):
         temp_history_24h = get_historical_datapoints(config["BASE_URL"], token, config["ORGANIZATION_ID"], 
                                                       temp_datastream_id, start_time_24h, end_time)
         if temp_history_24h and temp_history_24h.get("data"):
-            temp_points = temp_history_24h["data"]
+            raw_temp = temp_history_24h["data"]
+            temp_points = [p for p in raw_temp if p.get("value") is not None]
+            if len(temp_points) < len(raw_temp):
+                has_null_values = True
             if temp_points:
                 max_point = max(temp_points, key=lambda x: x["value"])
                 min_point = min(temp_points, key=lambda x: x["value"])
@@ -68,7 +72,10 @@ def display_current_metrics(config, token, datastreams):
         dir_history_1h = get_historical_datapoints(config["BASE_URL"], token, config["ORGANIZATION_ID"], 
                                                     wind_dir_datastream_id, start_time_1h, end_time, limit=12)
         if gust_history_1h and gust_history_1h.get("data") and dir_history_1h and dir_history_1h.get("data"):
-            gust_points = gust_history_1h["data"]
+            raw_gust = gust_history_1h["data"]
+            gust_points = [p for p in raw_gust if p.get("value") is not None]
+            if len(gust_points) < len(raw_gust):
+                has_null_values = True
             dir_points = dir_history_1h["data"]
             if gust_points and dir_points:
                 max_point = max(gust_points, key=lambda x: x["value"])
@@ -85,7 +92,10 @@ def display_current_metrics(config, token, datastreams):
         dir_history_24h = get_historical_datapoints(config["BASE_URL"], token, config["ORGANIZATION_ID"], 
                                                      wind_dir_datastream_id, start_time_24h, end_time)
         if gust_history_24h and gust_history_24h.get("data") and dir_history_24h and dir_history_24h.get("data"):
-            gust_points = gust_history_24h["data"]
+            raw_gust = gust_history_24h["data"]
+            gust_points = [p for p in raw_gust if p.get("value") is not None]
+            if len(gust_points) < len(raw_gust):
+                has_null_values = True
             dir_points = dir_history_24h["data"]
             if gust_points and dir_points:
                 max_point = max(gust_points, key=lambda x: x["value"])
@@ -102,7 +112,10 @@ def display_current_metrics(config, token, datastreams):
         dir_history_72h = get_historical_datapoints(config["BASE_URL"], token, config["ORGANIZATION_ID"], 
                                                      wind_dir_datastream_id, start_time_72h, end_time)
         if gust_history_72h and gust_history_72h.get("data") and dir_history_72h and dir_history_72h.get("data"):
-            gust_points = gust_history_72h["data"]
+            raw_gust = gust_history_72h["data"]
+            gust_points = [p for p in raw_gust if p.get("value") is not None]
+            if len(gust_points) < len(raw_gust):
+                has_null_values = True
             dir_points = dir_history_72h["data"]
             if gust_points and dir_points:
                 max_point = max(gust_points, key=lambda x: x["value"])
@@ -112,6 +125,9 @@ def display_current_metrics(config, token, datastreams):
                     "timestamp": datetime.fromtimestamp(max_point["ts"] / 1000, tz=ZoneInfo("America/Denver")),
                     "direction": dir_lookup.get(max_point["ts"])
                 }
+    
+    if has_null_values:
+        st.caption("⚠️ Some sensor readings are missing — data may be incomplete.")
     
     st.markdown(get_metric_card_css(), unsafe_allow_html=True)
     
