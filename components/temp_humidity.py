@@ -64,8 +64,21 @@ def display_temp_humidity_chart(config, token, datastreams):
                     temp_points = [p for p in temp_points if p.get('value') is not None]
                     humidity_points = [p for p in humidity_points if p.get('value') is not None]
                     
-                    if len(temp_points) < raw_temp_len or len(humidity_points) < raw_hum_len:
+                    null_details = []
+                    null_temps = [p for p in temp_data.get("data", []) if p.get("value") is None]
+                    if null_temps:
+                        null_details.append({"label": "Temperature", "points": null_temps, "total": raw_temp_len})
+                    null_hums = [p for p in humidity_data.get("data", []) if p.get("value") is None]
+                    if null_hums:
+                        null_details.append({"label": "Humidity", "points": null_hums, "total": raw_hum_len})
+                    if null_details:
                         st.caption("⚠️ Some sensor readings are missing — data may be incomplete.")
+                        with st.expander("View details"):
+                            for detail in null_details:
+                                missing = len(detail["points"])
+                                st.markdown(f"**{detail['label']}** — {missing} of {detail['total']} readings missing")
+                                timestamps = [datetime.fromtimestamp(p["ts"] / 1000, tz=ZoneInfo("America/Denver")).strftime("%b %d %I:%M %p") for p in detail["points"]]
+                                st.text("  " + ", ".join(timestamps))
                     
                     temp_times = [datetime.fromtimestamp(p['ts']/1000, tz=ZoneInfo("America/Denver")) for p in temp_points]
                     temp_values = [p['value'] for p in temp_points]

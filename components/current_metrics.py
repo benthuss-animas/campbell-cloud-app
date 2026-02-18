@@ -39,7 +39,7 @@ def display_current_metrics(config, token, datastreams):
     peak_gust_72h = None
     temp_high_24h = None
     temp_low_24h = None
-    has_null_values = False
+    null_details = []
     
     if temp_datastream_id:
         end_time = int(datetime.now().timestamp() * 1000)
@@ -49,8 +49,9 @@ def display_current_metrics(config, token, datastreams):
         if temp_history_24h and temp_history_24h.get("data"):
             raw_temp = temp_history_24h["data"]
             temp_points = [p for p in raw_temp if p.get("value") is not None]
-            if len(temp_points) < len(raw_temp):
-                has_null_values = True
+            null_temps = [p for p in raw_temp if p.get("value") is None]
+            if null_temps:
+                null_details.append({"label": "Temperature (24h)", "points": null_temps, "total": len(raw_temp)})
             if temp_points:
                 max_point = max(temp_points, key=lambda x: x["value"])
                 min_point = min(temp_points, key=lambda x: x["value"])
@@ -74,8 +75,9 @@ def display_current_metrics(config, token, datastreams):
         if gust_history_1h and gust_history_1h.get("data") and dir_history_1h and dir_history_1h.get("data"):
             raw_gust = gust_history_1h["data"]
             gust_points = [p for p in raw_gust if p.get("value") is not None]
-            if len(gust_points) < len(raw_gust):
-                has_null_values = True
+            null_gusts = [p for p in raw_gust if p.get("value") is None]
+            if null_gusts:
+                null_details.append({"label": "Wind Gust (1h)", "points": null_gusts, "total": len(raw_gust)})
             dir_points = dir_history_1h["data"]
             if gust_points and dir_points:
                 max_point = max(gust_points, key=lambda x: x["value"])
@@ -94,8 +96,9 @@ def display_current_metrics(config, token, datastreams):
         if gust_history_24h and gust_history_24h.get("data") and dir_history_24h and dir_history_24h.get("data"):
             raw_gust = gust_history_24h["data"]
             gust_points = [p for p in raw_gust if p.get("value") is not None]
-            if len(gust_points) < len(raw_gust):
-                has_null_values = True
+            null_gusts = [p for p in raw_gust if p.get("value") is None]
+            if null_gusts:
+                null_details.append({"label": "Wind Gust (24h)", "points": null_gusts, "total": len(raw_gust)})
             dir_points = dir_history_24h["data"]
             if gust_points and dir_points:
                 max_point = max(gust_points, key=lambda x: x["value"])
@@ -114,8 +117,9 @@ def display_current_metrics(config, token, datastreams):
         if gust_history_72h and gust_history_72h.get("data") and dir_history_72h and dir_history_72h.get("data"):
             raw_gust = gust_history_72h["data"]
             gust_points = [p for p in raw_gust if p.get("value") is not None]
-            if len(gust_points) < len(raw_gust):
-                has_null_values = True
+            null_gusts = [p for p in raw_gust if p.get("value") is None]
+            if null_gusts:
+                null_details.append({"label": "Wind Gust (72h)", "points": null_gusts, "total": len(raw_gust)})
             dir_points = dir_history_72h["data"]
             if gust_points and dir_points:
                 max_point = max(gust_points, key=lambda x: x["value"])
@@ -126,8 +130,14 @@ def display_current_metrics(config, token, datastreams):
                     "direction": dir_lookup.get(max_point["ts"])
                 }
     
-    if has_null_values:
+    if null_details:
         st.caption("⚠️ Some sensor readings are missing — data may be incomplete.")
+        with st.expander("View details"):
+            for detail in null_details:
+                missing = len(detail["points"])
+                st.markdown(f"**{detail['label']}** — {missing} of {detail['total']} readings missing")
+                timestamps = [datetime.fromtimestamp(p["ts"] / 1000, tz=ZoneInfo("America/Denver")).strftime("%b %d %I:%M %p") for p in detail["points"]]
+                st.text("  " + ", ".join(timestamps))
     
     st.markdown(get_metric_card_css(), unsafe_allow_html=True)
     
